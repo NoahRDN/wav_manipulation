@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <cstdint>
+#include <string>
 
 uint16_t readUInt16LE(const std::vector<uint8_t>& buffer, size_t offset) {
     return buffer[offset] | (buffer[offset + 1] << 8);
@@ -12,6 +13,19 @@ uint32_t readUInt32LE(const std::vector<uint8_t>& buffer, size_t offset) {
          | (buffer[offset + 1] << 8)
          | (buffer[offset + 2] << 16)
          | (buffer[offset + 3] << 24);
+}
+
+size_t findDataChunk(const std::vector<uint8_t>& buffer) {
+    for (size_t i = 0; i + 8 < buffer.size(); i++) {
+        if (buffer[i] == 'd' &&
+            buffer[i + 1] == 'a' &&
+            buffer[i + 2] == 't' &&
+            buffer[i + 3] == 'a') {
+            return i;
+        }
+    }
+
+    return std::string::npos;
 }
 
 int main() {
@@ -64,6 +78,22 @@ int main() {
     std::cout << "Canaux : " << numChannels << "\n";
     std::cout << "Frequence : " << sampleRate << " Hz\n";
     std::cout << "Bits par echantillon : " << bitsPerSample << "\n";
+
+    // -----------------------------
+
+    size_t dataChunkOffset = findDataChunk(buffer);
+
+    if (dataChunkOffset == std::string::npos) {
+        std::cerr << "Chunk data introuvable\n";
+        return 1;
+    }
+
+    uint32_t dataSize = readUInt32LE(buffer, dataChunkOffset + 4);
+    size_t audioDataOffset = dataChunkOffset + 8;
+
+    std::cout << "Offset chunk data : " << dataChunkOffset << "\n";
+    std::cout << "Taille data : " << dataSize << " octets\n";
+    std::cout << "Debut donnees audio : " << audioDataOffset << "\n";
 
     return 0;
 }
