@@ -9,10 +9,17 @@ LOG_FILE="$OUTPUT_DIR/run.log"
 
 mkdir -p "$OUTPUT_DIR"
 
-echo "[build] Compilation de main.cpp"
-g++ -std=c++17 -O2 "$ROOT_DIR/main.cpp" -o "$BINARY"
+echo "[build] Compilation du projet"
+
+g++ -std=c++17 -O2 \
+    "$ROOT_DIR/main.cpp" \
+    "$ROOT_DIR/src/binary_utils.cpp" \
+    "$ROOT_DIR/src/wav_file.cpp" \
+    -I"$ROOT_DIR/include" \
+    -o "$BINARY"
 
 echo "[run] Execution du programme"
+
 "$BINARY" >"$LOG_FILE" 2>&1
 
 echo "Execution terminee."
