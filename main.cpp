@@ -44,16 +44,22 @@ int main() {
     std::cout << "Fichier charge : " << buffer.size() << " octets\n";
 
 
-    for (int i = 22; i < 24; i++) {
+    for (int i = 0; i < 4; i++) {
         printf("0x%02X ", buffer[i]);
     }
     
     printf("\n");
 
-    for (int i = 22; i < 24; i++) {
+    for (int i = 0; i < 4; i++) {
         std::cout << (char)buffer[i];
     }
     
+    printf("\n");
+
+    for (int i = 8; i < 12; i++) {
+        std::cout << (char)buffer[i];
+    }
+
     std::cout << "\n";
     printf("%ld\n", buffer.size());
     
