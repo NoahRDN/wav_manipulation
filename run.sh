@@ -15,6 +15,7 @@ g++ -std=c++17 -O2 \
     "$ROOT_DIR/main.cpp" \
     "$ROOT_DIR/src/binary_utils.cpp" \
     "$ROOT_DIR/src/wav_file.cpp" \
+    "$ROOT_DIR/src/audio_processing.cpp" \
     -I"$ROOT_DIR/include" \
     -o "$BINARY"
 
