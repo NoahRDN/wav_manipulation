@@ -1,48 +1,63 @@
 # Manipulation d'un fichier WAV
 
-Ce projet est un petit programme C++ qui lit un fichier `input.wav` en binaire et affiche quelques informations extraites de son en-tête WAV.
+Ce projet C++ lit un fichier `input.wav`, extrait ses informations techniques, applique plusieurs traitements audio en manipulant directement les octets du format WAV, puis génère de nouveaux fichiers dans `output/`.
 
-## Ce que fait le projet
+## Fonctionnalités
 
-Le programme :
+Le programme principal :
 
-- ouvre `input.wav` en mode binaire ;
-- vérifie que le fichier est bien au format `RIFF/WAVE` ;
-- lit certaines métadonnées du fichier WAV ;
-- recherche la section `data` ;
-- affiche les informations trouvées dans la sortie standard.
+- charge `input.wav` en binaire ;
+- vérifie la structure `RIFF/WAVE` ;
+- lit les métadonnées utiles du header WAV ;
+- localise le chunk `data` ;
+- extrait les échantillons PCM 16 bits ;
+- génère plusieurs fichiers audio transformés.
 
-Les informations extraites sont :
+Les traitements actuellement produits sont :
 
-- le nombre de canaux ;
-- la fréquence d'échantillonnage ;
-- le nombre de bits par échantillon ;
-- l'offset du chunk `data` ;
-- la taille des données audio ;
-- la position de début des données audio.
+- `output/downsampled.wav` : sous-échantillonnage par 2 ;
+- `output/quantized_8bit.wav` : quantification de 16 bits vers 8 bits ;
+- `output/desaturated.wav` : atténuation des saturations par soft limiting ;
+- `output/normalized.wav` : normalisation du signal ;
+- `output/left_channel.wav` : extraction du canal gauche en mono.
 
 ## Structure du projet
 
-- `main.cpp` : code source principal
-- `run.sh` : script de compilation et d'exécution
-- `input.wav` : fichier audio analysé
-- `output/` : dossier contenant le binaire compilé et le journal d'exécution
+- `main.cpp` : point d'entrée du programme
+- `src/` : implémentation de la lecture WAV et des traitements audio
+- `include/` : fichiers d'en-tête
+- `run.sh` : script de compilation et d'exécution du programme principal
+- `play.cpp` : lecteur audio simple en C++ avec `SFML Audio`
+- `input.wav` : fichier source analysé et transformé
+- `output/` : binaires, logs et fichiers WAV générés
+- `documentation.md` : notes techniques sur le format WAV et les transformations
 - `utilities/` : documents de support
 
 ## Prérequis
 
-Il faut disposer de :
+Pour le programme principal :
 
 - `g++` avec support C++17 ;
 - `bash`.
 
-Sous Linux, vous pouvez vérifier la présence du compilateur avec :
+Pour le test auditif en C++ :
+
+- `libsfml-dev`.
+
+Installation sur Ubuntu :
+
+```bash
+sudo apt update
+sudo apt install libsfml-dev
+```
+
+Vérification du compilateur :
 
 ```bash
 g++ --version
 ```
 
-## Lancer le projet
+## Compilation et exécution
 
 Depuis la racine du projet :
 
@@ -52,17 +67,21 @@ Depuis la racine du projet :
 
 Le script :
 
-1. compile `main.cpp` ;
+1. compile `main.cpp` avec les fichiers de `src/` ;
 2. génère le binaire `output/wav_tp` ;
 3. exécute le programme ;
-4. enregistre la sortie dans `output/run.log`.
+4. écrit le journal dans `output/run.log`.
 
-## Consulter le résultat
+## Résultats générés
 
-Après l'exécution, les fichiers utiles sont :
+Après exécution, vous trouverez notamment :
 
-- `output/wav_tp` : le programme compilé
-- `output/run.log` : le résultat de l'analyse
+- `output/run.log` : résumé de l'analyse et des traitements ;
+- `output/downsampled.wav`
+- `output/quantized_8bit.wav`
+- `output/desaturated.wav`
+- `output/normalized.wav`
+- `output/left_channel.wav`
 
 Pour afficher le journal :
 
@@ -70,9 +89,46 @@ Pour afficher le journal :
 cat output/run.log
 ```
 
+## Étape 10 - Test auditif en C++
+
+Pour écouter les fichiers WAV générés en C++, le projet utilise `SFML Audio`, qui fournit un équivalent simple à `pygame` ou `sounddevice` pour charger puis lire un fichier audio.
+
+Le lecteur est déjà fourni dans `play.cpp` et repose sur :
+
+- `sf::SoundBuffer::loadFromFile(...)` pour charger le fichier ;
+- `sf::Sound` pour lancer la lecture.
+
+SFML prend notamment en charge les formats :
+
+- `WAV`
+- `OGG/Vorbis`
+- `FLAC`
+
+### Compiler le lecteur audio
+
+Depuis la racine du projet :
+
+```bash
+g++ -std=c++17 play.cpp -o output/play -lsfml-audio -lsfml-system
+```
+
+### Tester un fichier généré
+
+```bash
+./output/play output/downsampled.wav
+```
+
+Autres exemples :
+
+```bash
+./output/play output/quantized_8bit.wav
+./output/play output/normalized.wav
+./output/play output/left_channel.wav
+```
+
 ## Exemple d'informations affichées
 
-Le programme affiche notamment :
+Le programme principal affiche notamment :
 
 ```text
 Canaux : 2
@@ -85,4 +141,4 @@ Debut donnees audio : 252
 
 ## Remarque
 
-Le projet est orienté lecture et analyse du format WAV. Il ne modifie pas le fichier audio ; il inspecte uniquement sa structure binaire pour en extraire des informations techniques.
+Le projet est centré sur la manipulation binaire du format WAV. Les nouveaux fichiers sont reconstruits à partir des données transformées et d'un header mis à jour selon le traitement appliqué.
