@@ -50,4 +50,10 @@ void updateHeaderAfterStereoTo21(
     uint32_t newDataSize
 );
 
+void updateHeaderAfterStereoTo51(
+    std::vector<uint8_t>& buffer,
+    const WavInfo& info,
+    uint32_t newDataSize
+);
+
 #endif

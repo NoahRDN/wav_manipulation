@@ -226,6 +226,41 @@ int main() {
         std::cout << "Nouveau fichier cree : output/stereo_to_21.wav\n";
         std::cout << "Nouveaux canaux : 3\n";
         std::cout << "Nouvelle taille data : " << bytes21.size() << " octets\n";
+
+        std::cout << "======Simulation Surround 5.1======" << "\n";
+
+        if (info.numChannels != 2) {
+            throw std::runtime_error("Le fichier doit etre stereo pour creer un fichier 5.1");
+        }
+
+        std::vector<int16_t> samples51 =
+            stereoTo51(samples, info.numChannels);
+
+        std::vector<uint8_t> bytes51 =
+            samples16ToBytes(samples51);
+
+        std::vector<uint8_t> buffer51(
+            buffer.begin(),
+            buffer.begin() + static_cast<long>(info.audioDataOffset)
+        );
+
+        buffer51.insert(
+            buffer51.end(),
+            bytes51.begin(),
+            bytes51.end()
+        );
+
+        updateHeaderAfterStereoTo51(
+            buffer51,
+            info,
+            static_cast<uint32_t>(bytes51.size())
+        );
+
+        writeBinaryFile("output/stereo_to_51.wav", buffer51);
+
+        std::cout << "Nouveau fichier cree : output/stereo_to_51.wav\n";
+        std::cout << "Nouveaux canaux : 6\n";
+        std::cout << "Nouvelle taille data : " << bytes51.size() << " octets\n";
     }
     catch (const std::exception& error) {
         std::cerr << "Erreur : " << error.what() << "\n";

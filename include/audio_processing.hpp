@@ -56,4 +56,9 @@ std::vector<int16_t> stereoTo21(
     double alpha = 0.08
 );
 
+std::vector<int16_t> stereoTo51(
+    const std::vector<int16_t>& samples,
+    uint16_t numChannels
+);
+
 #endif

@@ -278,3 +278,57 @@ std::vector<int16_t> stereoTo21(
 
     return result;
 }
+
+static int16_t clampToInt16(int32_t value) {
+    if (value > 32767) {
+        return 32767;
+    }
+
+    if (value < -32768) {
+        return -32768;
+    }
+
+    return static_cast<int16_t>(value);
+}
+
+std::vector<int16_t> stereoTo51(
+    const std::vector<int16_t>& samples,
+    uint16_t numChannels
+) {
+    if (numChannels != 2) {
+        throw std::runtime_error("Le passage en 5.1 nécessite un fichier stereo");
+    }
+
+    std::vector<int16_t> result;
+
+    size_t frameCount = samples.size() / 2;
+    result.reserve(frameCount * 6);
+
+    for (size_t frame = 0; frame < frameCount; frame++) {
+        int16_t left  = samples[frame * 2];
+        int16_t right = samples[frame * 2 + 1];
+
+        int16_t L = left;
+        int16_t R = right;
+
+        int16_t C = clampToInt16(
+            static_cast<int32_t>(left) + static_cast<int32_t>(right)
+        );
+
+        int16_t LFE = clampToInt16(
+            (static_cast<int32_t>(left) + static_cast<int32_t>(right)) / 2
+        );
+
+        int16_t Ls = static_cast<int16_t>(left / 2);
+        int16_t Rs = static_cast<int16_t>(right / 2);
+
+        result.push_back(L);
+        result.push_back(R);
+        result.push_back(C);
+        result.push_back(LFE);
+        result.push_back(Ls);
+        result.push_back(Rs);
+    }
+
+    return result;
+}

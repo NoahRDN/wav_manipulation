@@ -184,3 +184,26 @@ void updateHeaderAfterStereoTo21(
     writeUInt16LE(buffer, 32, newBlockAlign);
     writeUInt32LE(buffer, info.dataChunkOffset + 4, newDataSize);
 }
+
+void updateHeaderAfterStereoTo51(
+    std::vector<uint8_t>& buffer,
+    const WavInfo& info,
+    uint32_t newDataSize
+) {
+    uint16_t newNumChannels = 6;
+
+    uint16_t newBlockAlign =
+        newNumChannels * (info.bitsPerSample / 8);
+
+    uint32_t newByteRate =
+        info.sampleRate * newBlockAlign;
+
+    uint32_t newChunkSize =
+        static_cast<uint32_t>(buffer.size() - 8);
+
+    writeUInt32LE(buffer, 4, newChunkSize);
+    writeUInt16LE(buffer, 22, newNumChannels);
+    writeUInt32LE(buffer, 28, newByteRate);
+    writeUInt16LE(buffer, 32, newBlockAlign);
+    writeUInt32LE(buffer, info.dataChunkOffset + 4, newDataSize);
+}
