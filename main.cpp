@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 int main() {
     try {
@@ -100,6 +101,61 @@ int main() {
         );
 
         writeBinaryFile("output/quantized_8bit.wav", quantizedBuffer);
+
+        std::cout << "Nouveau fichier cree : output/quantized_8bit.wav\n";
+        std::cout << "Nouveau format : PCM 8 bits\n";
+        std::cout << "Nouvelle taille data : " << quantizedAudio.size() << " octets\n";
+
+        std::cout << "======Nouveau fichier apres Gestion de la saturation - Soft Limiting ======" << "\n";
+        size_t saturatedCount = countSaturatedSamples(samples);
+
+        std::cout << "Samples satures : "
+                << saturatedCount
+                << "\n";
+
+        std::vector<int16_t> desaturatedSamples =
+            softLimit16(samples, 0.95);
+
+        std::vector<uint8_t> desaturatedBytes =
+            samples16ToBytes(desaturatedSamples);
+
+        std::vector<uint8_t> desaturatedBuffer = buffer;
+
+        std::copy(
+            desaturatedBytes.begin(),
+            desaturatedBytes.end(),
+            desaturatedBuffer.begin() + static_cast<long>(info.audioDataOffset)
+        );
+
+        writeBinaryFile("output/desaturated.wav", desaturatedBuffer);
+
+        std::cout << "Nouveau fichier cree : output/desaturated.wav\n";
+
+        std::cout << "======Normalisation du signal======" << "\n";
+
+        int32_t maxAmplitude = findMaxAmplitude16(samples);
+
+        std::cout << "Amplitude maximale avant normalisation : "
+                << maxAmplitude
+                << "\n";
+
+        std::vector<int16_t> normalizedSamples =
+            normalize16(samples, 0.95);
+
+        std::vector<uint8_t> normalizedBytes =
+            samples16ToBytes(normalizedSamples);
+
+        std::vector<uint8_t> normalizedBuffer = buffer;
+
+        std::copy(
+            normalizedBytes.begin(),
+            normalizedBytes.end(),
+            normalizedBuffer.begin() + static_cast<long>(info.audioDataOffset)
+        );
+
+        writeBinaryFile("output/normalized.wav", normalizedBuffer);
+
+        std::cout << "Nouveau fichier cree : output/normalized.wav\n";
     }
     catch (const std::exception& error) {
         std::cerr << "Erreur : " << error.what() << "\n";
