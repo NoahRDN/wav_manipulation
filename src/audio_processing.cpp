@@ -237,3 +237,44 @@ std::vector<int16_t> extractChannel16(
 
     return result;
 }
+
+std::vector<int16_t> stereoTo21(
+    const std::vector<int16_t>& samples,
+    uint16_t numChannels,
+    bool lowPassSub,
+    double alpha
+) {
+    if (numChannels != 2) {
+        throw std::runtime_error("Le passage 2.0 vers 2.1 nécessite un fichier stereo");
+    }
+
+    if (alpha <= 0.0 || alpha > 1.0) {
+        throw std::runtime_error("alpha doit etre dans l'intervalle ]0, 1]");
+    }
+
+    std::vector<int16_t> result;
+
+    size_t frameCount = samples.size() / 2;
+    result.reserve(frameCount * 3);
+
+    double previousSub = 0.0;
+
+    for (size_t frame = 0; frame < frameCount; frame++) {
+        int16_t left  = samples[frame * 2];
+        int16_t right = samples[frame * 2 + 1];
+
+        int32_t subValue =
+            (static_cast<int32_t>(left) + static_cast<int32_t>(right)) / 2;
+
+        if (lowPassSub) {
+            previousSub = alpha * subValue + (1.0 - alpha) * previousSub;
+            subValue = static_cast<int32_t>(std::round(previousSub));
+        }
+
+        result.push_back(left);
+        result.push_back(right);
+        result.push_back(static_cast<int16_t>(subValue));
+    }
+
+    return result;
+}

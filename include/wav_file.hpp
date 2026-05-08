@@ -44,4 +44,10 @@ void updateHeaderAfterMonoExtraction(
     uint32_t newDataSize
 );
 
+void updateHeaderAfterStereoTo21(
+    std::vector<uint8_t>& buffer,
+    const WavInfo& info,
+    uint32_t newDataSize
+);
+
 #endif

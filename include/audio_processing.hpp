@@ -49,4 +49,11 @@ std::vector<int16_t> extractChannel16(
     uint16_t channelIndex
 );
 
+std::vector<int16_t> stereoTo21(
+    const std::vector<int16_t>& samples,
+    uint16_t numChannels,
+    bool lowPassSub = false,
+    double alpha = 0.08
+);
+
 #endif
