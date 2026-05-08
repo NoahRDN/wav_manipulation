@@ -100,6 +100,35 @@ int main() {
         );
 
         writeBinaryFile("output/quantized_8bit.wav", quantizedBuffer);
+
+        std::cout << "Nouveau fichier cree : output/quantized_8bit.wav\n";
+        std::cout << "Nouveau format : PCM 8 bits\n";
+        std::cout << "Nouvelle taille data : " << quantizedAudio.size() << " octets\n";
+
+        std::cout << "======Nouveau fichier apres Gestion de la saturation - Soft Limiting ======" << "\n";
+        size_t saturatedCount = countSaturatedSamples(samples);
+
+        std::cout << "Samples satures : "
+                << saturatedCount
+                << "\n";
+
+        std::vector<int16_t> desaturatedSamples =
+            softLimit16(samples, 0.95);
+
+        std::vector<uint8_t> desaturatedBytes =
+            samples16ToBytes(desaturatedSamples);
+
+        std::vector<uint8_t> desaturatedBuffer = buffer;
+
+        std::copy(
+            desaturatedBytes.begin(),
+            desaturatedBytes.end(),
+            desaturatedBuffer.begin() + static_cast<long>(info.audioDataOffset)
+        );
+
+        writeBinaryFile("output/desaturated.wav", desaturatedBuffer);
+
+        std::cout << "Nouveau fichier cree : output/desaturated.wav\n";
     }
     catch (const std::exception& error) {
         std::cerr << "Erreur : " << error.what() << "\n";

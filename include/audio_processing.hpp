@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include <cstddef>
 
 std::vector<int16_t> extractSamples16Bits(
     const std::vector<uint8_t>& buffer,
@@ -22,6 +23,15 @@ std::vector<uint8_t> samples16ToBytes(
 
 std::vector<uint8_t> quantize16To8(
     const std::vector<int16_t>& samples
+);
+
+size_t countSaturatedSamples(
+    const std::vector<int16_t>& samples
+);
+
+std::vector<int16_t> softLimit16(
+    const std::vector<int16_t>& samples,
+    double thresholdRatio = 0.95
 );
 
 #endif
