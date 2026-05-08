@@ -156,6 +156,41 @@ int main() {
         writeBinaryFile("output/normalized.wav", normalizedBuffer);
 
         std::cout << "Nouveau fichier cree : output/normalized.wav\n";
+
+        std::cout << "======Extraction du canal gauche======" << "\n";
+
+        if (info.numChannels < 2) {
+            throw std::runtime_error("Le fichier n'est pas stereo, extraction gauche impossible");
+        }
+
+        std::vector<int16_t> leftSamples =
+            extractChannel16(samples, info.numChannels, 0);
+
+        std::vector<uint8_t> leftBytes =
+            samples16ToBytes(leftSamples);
+
+        std::vector<uint8_t> leftBuffer(
+            buffer.begin(),
+            buffer.begin() + static_cast<long>(info.audioDataOffset)
+        );
+
+        leftBuffer.insert(
+            leftBuffer.end(),
+            leftBytes.begin(),
+            leftBytes.end()
+        );
+
+        updateHeaderAfterMonoExtraction(
+            leftBuffer,
+            info,
+            static_cast<uint32_t>(leftBytes.size())
+        );
+
+        writeBinaryFile("output/left_channel.wav", leftBuffer);
+
+        std::cout << "Nouveau fichier cree : output/left_channel.wav\n";
+        std::cout << "Nouveaux canaux : 1\n";
+        std::cout << "Nouvelle taille data : " << leftBytes.size() << " octets\n";
     }
     catch (const std::exception& error) {
         std::cerr << "Erreur : " << error.what() << "\n";
