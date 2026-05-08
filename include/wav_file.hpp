@@ -50,4 +50,17 @@ void updateHeaderAfterStereoTo21(
     uint32_t newDataSize
 );
 
+void updateHeaderAfterStereoTo51(
+    std::vector<uint8_t>& buffer,
+    const WavInfo& info,
+    uint32_t newDataSize
+);
+
+std::vector<uint8_t> buildWavPcmBuffer(
+    const std::vector<uint8_t>& audioData,
+    uint16_t numChannels,
+    uint32_t sampleRate,
+    uint16_t bitsPerSample
+);
+
 #endif

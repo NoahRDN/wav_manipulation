@@ -184,3 +184,87 @@ void updateHeaderAfterStereoTo21(
     writeUInt16LE(buffer, 32, newBlockAlign);
     writeUInt32LE(buffer, info.dataChunkOffset + 4, newDataSize);
 }
+
+void updateHeaderAfterStereoTo51(
+    std::vector<uint8_t>& buffer,
+    const WavInfo& info,
+    uint32_t newDataSize
+) {
+    uint16_t newNumChannels = 6;
+
+    uint16_t newBlockAlign =
+        newNumChannels * (info.bitsPerSample / 8);
+
+    uint32_t newByteRate =
+        info.sampleRate * newBlockAlign;
+
+    uint32_t newChunkSize =
+        static_cast<uint32_t>(buffer.size() - 8);
+
+    writeUInt32LE(buffer, 4, newChunkSize);
+    writeUInt16LE(buffer, 22, newNumChannels);
+    writeUInt32LE(buffer, 28, newByteRate);
+    writeUInt16LE(buffer, 32, newBlockAlign);
+    writeUInt32LE(buffer, info.dataChunkOffset + 4, newDataSize);
+}
+
+std::vector<uint8_t> buildWavPcmBuffer(
+    const std::vector<uint8_t>& audioData,
+    uint16_t numChannels,
+    uint32_t sampleRate,
+    uint16_t bitsPerSample
+) {
+    std::vector<uint8_t> buffer(44, 0);
+
+    uint16_t blockAlign =
+        numChannels * (bitsPerSample / 8);
+
+    uint32_t byteRate =
+        sampleRate * blockAlign;
+
+    uint32_t dataSize =
+        static_cast<uint32_t>(audioData.size());
+
+    uint32_t chunkSize =
+        36 + dataSize;
+
+    buffer[0] = 'R';
+    buffer[1] = 'I';
+    buffer[2] = 'F';
+    buffer[3] = 'F';
+
+    writeUInt32LE(buffer, 4, chunkSize);
+
+    buffer[8] = 'W';
+    buffer[9] = 'A';
+    buffer[10] = 'V';
+    buffer[11] = 'E';
+
+    buffer[12] = 'f';
+    buffer[13] = 'm';
+    buffer[14] = 't';
+    buffer[15] = ' ';
+
+    writeUInt32LE(buffer, 16, 16);              // Subchunk1Size
+    writeUInt16LE(buffer, 20, 1);               // AudioFormat = PCM
+    writeUInt16LE(buffer, 22, numChannels);
+    writeUInt32LE(buffer, 24, sampleRate);
+    writeUInt32LE(buffer, 28, byteRate);
+    writeUInt16LE(buffer, 32, blockAlign);
+    writeUInt16LE(buffer, 34, bitsPerSample);
+
+    buffer[36] = 'd';
+    buffer[37] = 'a';
+    buffer[38] = 't';
+    buffer[39] = 'a';
+
+    writeUInt32LE(buffer, 40, dataSize);
+
+    buffer.insert(
+        buffer.end(),
+        audioData.begin(),
+        audioData.end()
+    );
+
+    return buffer;
+}

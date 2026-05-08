@@ -226,6 +226,99 @@ int main() {
         std::cout << "Nouveau fichier cree : output/stereo_to_21.wav\n";
         std::cout << "Nouveaux canaux : 3\n";
         std::cout << "Nouvelle taille data : " << bytes21.size() << " octets\n";
+
+        std::cout << "======Simulation Surround 5.1======" << "\n";
+
+        if (info.numChannels != 2) {
+            throw std::runtime_error("Le fichier doit etre stereo pour creer un fichier 5.1");
+        }
+
+        std::vector<int16_t> samples51 =
+            stereoTo51(samples, info.numChannels);
+
+        std::vector<uint8_t> bytes51 =
+            samples16ToBytes(samples51);
+
+        std::vector<uint8_t> buffer51(
+            buffer.begin(),
+            buffer.begin() + static_cast<long>(info.audioDataOffset)
+        );
+
+        buffer51.insert(
+            buffer51.end(),
+            bytes51.begin(),
+            bytes51.end()
+        );
+
+        updateHeaderAfterStereoTo51(
+            buffer51,
+            info,
+            static_cast<uint32_t>(bytes51.size())
+        );
+
+        writeBinaryFile("output/stereo_to_51.wav", buffer51);
+
+        std::cout << "Nouveau fichier cree : output/stereo_to_51.wav\n";
+        std::cout << "Nouveaux canaux : 6\n";
+        std::cout << "Nouvelle taille data : " << bytes51.size() << " octets\n";
+
+        std::cout << "======Generation onde sinusoidale 440 Hz======" << "\n";
+
+        uint32_t synthSampleRate = 44100;
+        double durationSeconds = 1.0;
+        double frequency = 440.0;
+
+        // Onde mono 440 Hz
+        std::vector<int16_t> sineMonoSamples =
+            generateSineWave16(
+                frequency,
+                durationSeconds,
+                synthSampleRate,
+                0.5
+            );
+
+        std::vector<uint8_t> sineMonoBytes =
+            samples16ToBytes(sineMonoSamples);
+
+        std::vector<uint8_t> sineMonoBuffer =
+            buildWavPcmBuffer(
+                sineMonoBytes,
+                1,
+                synthSampleRate,
+                16
+            );
+
+        writeBinaryFile("output/sine_440_mono.wav", sineMonoBuffer);
+
+        std::cout << "Fichier cree : output/sine_440_mono.wav\n";
+
+
+        // Onde 5.1 avec deplacement du son
+        std::vector<int16_t> sine51Samples =
+            generateTravelingSine51(
+                frequency,
+                durationSeconds,
+                synthSampleRate,
+                0.5
+            );
+
+        std::vector<uint8_t> sine51Bytes =
+            samples16ToBytes(sine51Samples);
+
+        std::vector<uint8_t> sine51Buffer =
+            buildWavPcmBuffer(
+                sine51Bytes,
+                6,
+                synthSampleRate,
+                16
+            );
+
+        writeBinaryFile("output/sine_440_travel_51.wav", sine51Buffer);
+
+        std::cout << "Fichier cree : output/sine_440_travel_51.wav\n";
+        std::cout << "Canaux : 6\n";
+        std::cout << "Frequence du son : 440 Hz\n";
+        std::cout << "Duree : 1 seconde\n";
     }
     catch (const std::exception& error) {
         std::cerr << "Erreur : " << error.what() << "\n";
