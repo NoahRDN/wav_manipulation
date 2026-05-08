@@ -61,4 +61,18 @@ std::vector<int16_t> stereoTo51(
     uint16_t numChannels
 );
 
+std::vector<int16_t> generateSineWave16(
+    double frequency,
+    double durationSeconds,
+    uint32_t sampleRate,
+    double amplitudeRatio = 0.5
+);
+
+std::vector<int16_t> generateTravelingSine51(
+    double frequency,
+    double durationSeconds,
+    uint32_t sampleRate,
+    double amplitudeRatio = 0.5
+);
+
 #endif

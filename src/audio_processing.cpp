@@ -332,3 +332,113 @@ std::vector<int16_t> stereoTo51(
 
     return result;
 }
+
+static int16_t clampToInt16Local(int32_t value) {
+    if (value > std::numeric_limits<int16_t>::max()) {
+        return std::numeric_limits<int16_t>::max();
+    }
+
+    if (value < std::numeric_limits<int16_t>::min()) {
+        return std::numeric_limits<int16_t>::min();
+    }
+
+    return static_cast<int16_t>(value);
+}
+
+std::vector<int16_t> generateSineWave16(
+    double frequency,
+    double durationSeconds,
+    uint32_t sampleRate,
+    double amplitudeRatio
+) {
+    if (frequency <= 0.0 || durationSeconds <= 0.0 || sampleRate == 0) {
+        throw std::runtime_error("Parametres invalides pour la generation sinusoidale");
+    }
+
+    if (amplitudeRatio <= 0.0 || amplitudeRatio > 1.0) {
+        throw std::runtime_error("amplitudeRatio doit etre dans ]0, 1]");
+    }
+
+    const double pi = std::acos(-1.0);
+    const size_t frameCount =
+        static_cast<size_t>(durationSeconds * sampleRate);
+
+    const double amplitude =
+        std::numeric_limits<int16_t>::max() * amplitudeRatio;
+
+    std::vector<int16_t> samples;
+    samples.reserve(frameCount);
+
+    for (size_t n = 0; n < frameCount; n++) {
+        double value =
+            amplitude * std::sin(2.0 * pi * frequency * n / sampleRate);
+
+        samples.push_back(
+            clampToInt16Local(static_cast<int32_t>(std::round(value)))
+        );
+    }
+
+    return samples;
+}
+
+std::vector<int16_t> generateTravelingSine51(
+    double frequency,
+    double durationSeconds,
+    uint32_t sampleRate,
+    double amplitudeRatio
+) {
+    if (frequency <= 0.0 || durationSeconds <= 0.0 || sampleRate == 0) {
+        throw std::runtime_error("Parametres invalides pour la generation 5.1");
+    }
+
+    if (amplitudeRatio <= 0.0 || amplitudeRatio > 1.0) {
+        throw std::runtime_error("amplitudeRatio doit etre dans ]0, 1]");
+    }
+
+    const double pi = std::acos(-1.0);
+    const uint16_t channelCount = 6;
+
+    const size_t frameCount =
+        static_cast<size_t>(durationSeconds * sampleRate);
+
+    const double amplitude =
+        std::numeric_limits<int16_t>::max() * amplitudeRatio;
+
+    std::vector<int16_t> samples;
+    samples.reserve(frameCount * channelCount);
+
+    for (size_t n = 0; n < frameCount; n++) {
+        double sineValue =
+            amplitude * std::sin(2.0 * pi * frequency * n / sampleRate);
+
+        double progress =
+            static_cast<double>(n) / static_cast<double>(frameCount - 1);
+
+        double position =
+            progress * static_cast<double>(channelCount - 1);
+
+        size_t currentChannel =
+            static_cast<size_t>(std::floor(position));
+
+        double fraction =
+            position - static_cast<double>(currentChannel);
+
+        double gains[6] = {0, 0, 0, 0, 0, 0};
+
+        gains[currentChannel] = 1.0 - fraction;
+
+        if (currentChannel + 1 < channelCount) {
+            gains[currentChannel + 1] = fraction;
+        }
+
+        for (uint16_t ch = 0; ch < channelCount; ch++) {
+            double channelValue = sineValue * gains[ch];
+
+            samples.push_back(
+                clampToInt16Local(static_cast<int32_t>(std::round(channelValue)))
+            );
+        }
+    }
+
+    return samples;
+}
