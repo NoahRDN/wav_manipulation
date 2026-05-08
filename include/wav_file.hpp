@@ -38,4 +38,10 @@ void updateHeaderAfterQuantization8Bits(
     uint32_t newDataSize
 );
 
+void updateHeaderAfterMonoExtraction(
+    std::vector<uint8_t>& buffer,
+    const WavInfo& info,
+    uint32_t newDataSize
+);
+
 #endif

@@ -43,4 +43,10 @@ std::vector<int16_t> normalize16(
     double targetRatio = 0.95
 );
 
+std::vector<int16_t> extractChannel16(
+    const std::vector<int16_t>& samples,
+    uint16_t numChannels,
+    uint16_t channelIndex
+);
+
 #endif

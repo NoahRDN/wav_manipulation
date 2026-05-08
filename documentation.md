@@ -99,3 +99,6 @@ sample16 = 32767   → sample8 ≈ 255
 ```
 
 Donc la forme générale de l’onde est conservée, car toutes les amplitudes sont transformées de manière proportionnelle. On perd seulement de la précision, pas la structure globale du signal.
+
+
+Dans un fichier WAV stéréo, les samples sont entrelacés sous la forme L0 R0 L1 R1 L2 R2. Pour isoler le canal gauche, on parcourt les frames audio et on conserve uniquement le premier sample de chaque frame, c’est-à-dire L0, L1, L2, etc. Le nouveau fichier devient mono, donc il faut mettre à jour le header : NumChannels passe à 1, BlockAlign devient NumChannels × BitsPerSample/8, ByteRate devient SampleRate × BlockAlign, DataSize devient la taille du nouveau tableau audio, et ChunkSize est recalculé avec la nouvelle taille du fichier moins 8.

@@ -212,3 +212,28 @@ std::vector<int16_t> normalize16(
 
     return result;
 }
+
+std::vector<int16_t> extractChannel16(
+    const std::vector<int16_t>& samples,
+    uint16_t numChannels,
+    uint16_t channelIndex
+) {
+    if (numChannels == 0) {
+        throw std::runtime_error("Nombre de canaux invalide");
+    }
+
+    if (channelIndex >= numChannels) {
+        throw std::runtime_error("Index de canal invalide");
+    }
+
+    std::vector<int16_t> result;
+
+    size_t frameCount = samples.size() / numChannels;
+    result.reserve(frameCount);
+
+    for (size_t frame = 0; frame < frameCount; frame++) {
+        result.push_back(samples[frame * numChannels + channelIndex]);
+    }
+
+    return result;
+}
