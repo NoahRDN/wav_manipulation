@@ -191,6 +191,41 @@ int main() {
         std::cout << "Nouveau fichier cree : output/left_channel.wav\n";
         std::cout << "Nouveaux canaux : 1\n";
         std::cout << "Nouvelle taille data : " << leftBytes.size() << " octets\n";
+
+        std::cout << "======Passage stereo 2.0 vers 2.1======" << "\n";
+
+        if (info.numChannels != 2) {
+            throw std::runtime_error("Le fichier doit etre stereo pour creer un fichier 2.1");
+        }
+
+        std::vector<int16_t> samples21 =
+            stereoTo21(samples, info.numChannels, true, 0.08);
+
+        std::vector<uint8_t> bytes21 =
+            samples16ToBytes(samples21);
+
+        std::vector<uint8_t> buffer21(
+            buffer.begin(),
+            buffer.begin() + static_cast<long>(info.audioDataOffset)
+        );
+
+        buffer21.insert(
+            buffer21.end(),
+            bytes21.begin(),
+            bytes21.end()
+        );
+
+        updateHeaderAfterStereoTo21(
+            buffer21,
+            info,
+            static_cast<uint32_t>(bytes21.size())
+        );
+
+        writeBinaryFile("output/stereo_to_21.wav", buffer21);
+
+        std::cout << "Nouveau fichier cree : output/stereo_to_21.wav\n";
+        std::cout << "Nouveaux canaux : 3\n";
+        std::cout << "Nouvelle taille data : " << bytes21.size() << " octets\n";
     }
     catch (const std::exception& error) {
         std::cerr << "Erreur : " << error.what() << "\n";
