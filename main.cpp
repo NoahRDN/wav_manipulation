@@ -27,7 +27,7 @@ int main() {
         std::cout << "Taille data : " << info.dataSize << " octets\n";
         std::cout << "Debut donnees audio : " << info.audioDataOffset << "\n";
 
-        std::cout << "Nouveau fichier après division de la fréquence d'echantillonnage par 2 en calculant la moyenne" << "\n";
+        std::cout << "======Nouveau fichier après division de la fréquence d'echantillonnage par 2 en calculant la moyenne======" << "\n";
         if (info.audioFormat != 1) {
             throw std::runtime_error("Seul le format PCM entier est supporte pour le moment");
         }
@@ -56,27 +56,50 @@ int main() {
         std::vector<uint8_t> newAudioBytes =
             samples16ToBytes(downsampledSamples);
 
-        std::vector<uint8_t> outputBuffer(
+        std::vector<uint8_t> downsampledBuffer(
             buffer.begin(),
             buffer.begin() + static_cast<long>(info.audioDataOffset)
         );
 
-        outputBuffer.insert(
-            outputBuffer.end(),
+        downsampledBuffer.insert(
+            downsampledBuffer.end(),
             newAudioBytes.begin(),
             newAudioBytes.end()
         );
 
         updateHeaderAfterDownsamplingBy2(
-            outputBuffer,
+            downsampledBuffer,
             info,
             static_cast<uint32_t>(newAudioBytes.size())
         );
 
-        writeBinaryFile("output/downsampled.wav", outputBuffer);
+        writeBinaryFile("output/downsampled.wav", downsampledBuffer);
         std::cout << "Nouveau fichier cree : output/downsampled.wav\n";
         std::cout << "Nouvelle frequence : " << info.sampleRate / 2 << " Hz\n";
         std::cout << "Nouvelle taille data : " << newAudioBytes.size() << " octets\n";
+
+        std::cout << "======Nouveau fichier apres quantification en 8 bits======" << "\n";
+
+        std::vector<uint8_t> quantizedAudio = quantize16To8(samples);
+
+        std::vector<uint8_t> quantizedBuffer(
+            buffer.begin(),
+            buffer.begin() + static_cast<long>(info.audioDataOffset)
+        );
+
+        quantizedBuffer.insert(
+            quantizedBuffer.end(),
+            quantizedAudio.begin(),
+            quantizedAudio.end()
+        );
+
+        updateHeaderAfterQuantization8Bits(
+            quantizedBuffer,
+            info,
+            static_cast<uint32_t>(quantizedAudio.size())
+        );
+
+        writeBinaryFile("output/quantized_8bit.wav", quantizedBuffer);
     }
     catch (const std::exception& error) {
         std::cerr << "Erreur : " << error.what() << "\n";

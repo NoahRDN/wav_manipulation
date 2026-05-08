@@ -71,3 +71,20 @@ std::vector<uint8_t> samples16ToBytes(
 
     return bytes;
 }
+
+std::vector<uint8_t> quantize16To8(
+    const std::vector<int16_t>& samples
+) {
+    std::vector<uint8_t> result;
+    result.reserve(samples.size());
+
+    for (int16_t sample16 : samples) {
+        uint8_t sample8 = static_cast<uint8_t>(
+            (static_cast<int32_t>(sample16) + 32768) / 256
+        );
+
+        result.push_back(sample8);
+    }
+
+    return result;
+}

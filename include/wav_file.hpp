@@ -32,4 +32,10 @@ void updateHeaderAfterDownsamplingBy2(
     uint32_t newDataSize
 );
 
+void updateHeaderAfterQuantization8Bits(
+    std::vector<uint8_t>& buffer,
+    const WavInfo& info,
+    uint32_t newDataSize
+);
+
 #endif

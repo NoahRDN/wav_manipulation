@@ -20,4 +20,8 @@ std::vector<uint8_t> samples16ToBytes(
     const std::vector<int16_t>& samples
 );
 
+std::vector<uint8_t> quantize16To8(
+    const std::vector<int16_t>& samples
+);
+
 #endif

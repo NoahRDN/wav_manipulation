@@ -56,6 +56,46 @@ SampleRate ne change pas
 NumChannels ne change pas
 
 Un sample = valeur d’un canal.
-
 Une frame audio = ensemble des samples de tous les canaux à un instant donné.
 
+Après le sous-échantillonnage, le nombre de frames audio est divisé par 2. Il faut donc diviser le champ SampleRate par 2. Le champ ByteRate doit être recalculé avec la formule SampleRate × NumChannels × BitsPerSample/8. Comme le tableau de données audio devient plus petit, il faut aussi mettre à jour la taille du chunk data, c’est-à-dire Subchunk2Size/DataSize. Enfin, la taille globale RIFF ChunkSize doit être recalculée avec la nouvelle taille du fichier moins 8 octets. Les champs NumChannels, BitsPerSample, BlockAlign et AudioFormat ne changent pas si on ne modifie ni le nombre de canaux ni la quantification.
+
+Tu peux répondre comme ça :
+
+Pour réduire la quantification de **16 bits à 8 bits**, il faut transformer chaque amplitude 16 bits en une amplitude 8 bits en gardant une correspondance proportionnelle entre les valeurs.
+
+Comme un sample PCM 16 bits signé varie généralement de :
+
+```txt
+-32768 à 32767
+```
+
+et qu’un sample PCM 8 bits WAV est généralement non signé, donc :
+
+```txt
+0 à 255
+```
+
+on peut utiliser l’opération arithmétique suivante :
+
+```txt
+sample8 = (sample16 + 32768) / 256
+```
+
+ou, de manière équivalente avec un décalage binaire :
+
+```txt
+sample8 = (sample16 + 32768) >> 8
+```
+
+Cette opération décale d’abord le signal pour passer de l’intervalle signé `[-32768 ; 32767]` vers `[0 ; 65535]`, puis réduit la résolution de 16 bits à 8 bits.
+
+Exemple :
+
+```txt
+sample16 = -32768  → sample8 = 0
+sample16 = 0       → sample8 = 128
+sample16 = 32767   → sample8 ≈ 255
+```
+
+Donc la forme générale de l’onde est conservée, car toutes les amplitudes sont transformées de manière proportionnelle. On perd seulement de la précision, pas la structure globale du signal.
