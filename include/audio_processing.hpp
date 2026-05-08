@@ -34,4 +34,13 @@ std::vector<int16_t> softLimit16(
     double thresholdRatio = 0.95
 );
 
+int32_t findMaxAmplitude16(
+    const std::vector<int16_t>& samples
+);
+
+std::vector<int16_t> normalize16(
+    const std::vector<int16_t>& samples,
+    double targetRatio = 0.95
+);
+
 #endif

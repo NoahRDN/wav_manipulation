@@ -4,6 +4,9 @@
 #include <stdexcept>
 #include <cmath>
 #include <limits>
+#include <algorithm>
+#include <cmath>
+#include <limits>
 
 std::vector<int16_t> extractSamples16Bits(
     const std::vector<uint8_t>& buffer,
@@ -147,6 +150,64 @@ std::vector<int16_t> softLimit16(
         );
 
         result.push_back(newSample);
+    }
+
+    return result;
+}
+
+int32_t findMaxAmplitude16(
+    const std::vector<int16_t>& samples
+) {
+    int32_t maxAmplitude = 0;
+
+    for (int16_t sample : samples) {
+        int32_t value = static_cast<int32_t>(sample);
+        int32_t absValue = std::abs(value);
+
+        if (absValue > maxAmplitude) {
+            maxAmplitude = absValue;
+        }
+    }
+
+    return maxAmplitude;
+}
+
+std::vector<int16_t> normalize16(
+    const std::vector<int16_t>& samples,
+    double targetRatio
+) {
+    std::vector<int16_t> result;
+    result.reserve(samples.size());
+
+    int32_t maxAmplitude = findMaxAmplitude16(samples);
+
+    if (maxAmplitude == 0) {
+        return samples;
+    }
+
+    const double maxAllowed =
+        static_cast<double>(std::numeric_limits<int16_t>::max());
+
+    const double targetAmplitude = maxAllowed * targetRatio;
+
+    const double gain =
+        targetAmplitude / static_cast<double>(maxAmplitude);
+
+    for (int16_t sample : samples) {
+        double normalized =
+            static_cast<double>(sample) * gain;
+
+        if (normalized > maxAllowed) {
+            normalized = maxAllowed;
+        }
+
+        if (normalized < static_cast<double>(std::numeric_limits<int16_t>::min())) {
+            normalized = static_cast<double>(std::numeric_limits<int16_t>::min());
+        }
+
+        result.push_back(
+            static_cast<int16_t>(std::round(normalized))
+        );
     }
 
     return result;
