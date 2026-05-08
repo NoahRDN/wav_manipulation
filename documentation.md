@@ -102,3 +102,7 @@ Donc la forme générale de l’onde est conservée, car toutes les amplitudes s
 
 
 Dans un fichier WAV stéréo, les samples sont entrelacés sous la forme L0 R0 L1 R1 L2 R2. Pour isoler le canal gauche, on parcourt les frames audio et on conserve uniquement le premier sample de chaque frame, c’est-à-dire L0, L1, L2, etc. Le nouveau fichier devient mono, donc il faut mettre à jour le header : NumChannels passe à 1, BlockAlign devient NumChannels × BitsPerSample/8, ByteRate devient SampleRate × BlockAlign, DataSize devient la taille du nouveau tableau audio, et ChunkSize est recalculé avec la nouvelle taille du fichier moins 8.
+
+Après chaque traitement, je reconstruis un fichier WAV en conservant l’en-tête original jusqu’au début des données audio, puis j’insère le nouveau tableau d’octets audio. Les champs du header dépendant de la transformation sont recalculés, notamment ChunkSize, DataSize, ByteRate, SampleRate, BlockAlign, BitsPerSample ou NumChannels selon le cas. Le fichier final est ensuite écrit en mode binaire dans un nouveau fichier .wav.
+
+Pour valider le résultat, j’utilise une bibliothèque de lecture audio simple, comme SFML Audio en C++, afin de charger le fichier WAV généré et de l’écouter.
