@@ -1,6 +1,8 @@
 #include "audio_processing.hpp"
 #include "binary_utils.hpp"
 
+#include <stdexcept>
+
 std::vector<int16_t> extractSamples16Bits(
     const std::vector<uint8_t>& buffer,
     size_t audioOffset,
@@ -8,13 +10,15 @@ std::vector<int16_t> extractSamples16Bits(
 ) {
     std::vector<int16_t> samples;
 
-    for (size_t i = audioOffset; i < audioOffset + dataSize; i += 2) {
+    size_t end = audioOffset + dataSize;
 
-        uint16_t sampleUInt =
-            buffer[i] |
-            (buffer[i + 1] << 8);
+    if (end > buffer.size()) {
+        throw std::runtime_error("Les donnees audio depassent la taille du fichier");
+    }
 
-        int16_t sample = static_cast<int16_t>(sampleUInt);
+    for (size_t i = audioOffset; i + 1 < end; i += 2) {
+        uint16_t raw = readUInt16LE(buffer, i);
+        int16_t sample = static_cast<int16_t>(raw);
 
         samples.push_back(sample);
     }
@@ -22,20 +26,48 @@ std::vector<int16_t> extractSamples16Bits(
     return samples;
 }
 
-std::vector<int16_t> downsampleBy2(
-    const std::vector<int16_t>& samples
+std::vector<int16_t> downsampleBy2ByFrames(
+    const std::vector<int16_t>& samples,
+    uint16_t numChannels
 ) {
-    std::vector<int16_t> newSamples;
+    std::vector<int16_t> result;
 
-    for (size_t i = 0; i + 1 < samples.size(); i += 2) {
-
-        int32_t average =
-            (samples[i] + samples[i + 1]) / 2;
-
-        newSamples.push_back(
-            static_cast<int16_t>(average)
-        );
+    if (numChannels == 0) {
+        return result;
     }
 
-    return newSamples;
+    size_t frameCount = samples.size() / numChannels;
+
+    result.reserve((frameCount / 2) * numChannels);
+
+    for (size_t frame = 0; frame + 1 < frameCount; frame += 2) {
+        for (uint16_t ch = 0; ch < numChannels; ch++) {
+            int16_t a = samples[frame * numChannels + ch];
+            int16_t b = samples[(frame + 1) * numChannels + ch];
+
+            int32_t average =
+                (static_cast<int32_t>(a) + static_cast<int32_t>(b)) / 2;
+
+            result.push_back(static_cast<int16_t>(average));
+        }
+    }
+
+    return result;
+}
+
+std::vector<uint8_t> samples16ToBytes(
+    const std::vector<int16_t>& samples
+) {
+    std::vector<uint8_t> bytes;
+
+    bytes.reserve(samples.size() * 2);
+
+    for (int16_t sample : samples) {
+        uint16_t raw = static_cast<uint16_t>(sample);
+
+        bytes.push_back(static_cast<uint8_t>(raw & 0xFF));
+        bytes.push_back(static_cast<uint8_t>((raw >> 8) & 0xFF));
+    }
+
+    return bytes;
 }
