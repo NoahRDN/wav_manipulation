@@ -106,3 +106,27 @@ Dans un fichier WAV stéréo, les samples sont entrelacés sous la forme L0 R0 L
 Après chaque traitement, je reconstruis un fichier WAV en conservant l’en-tête original jusqu’au début des données audio, puis j’insère le nouveau tableau d’octets audio. Les champs du header dépendant de la transformation sont recalculés, notamment ChunkSize, DataSize, ByteRate, SampleRate, BlockAlign, BitsPerSample ou NumChannels selon le cas. Le fichier final est ensuite écrit en mode binaire dans un nouveau fichier .wav.
 
 Pour valider le résultat, j’utilise une bibliothèque de lecture audio simple, comme SFML Audio en C++, afin de charger le fichier WAV généré et de l’écouter.
+
+Sans filtre :
+
+Sub = (L + R) / 2
+
+Mais ce canal contient encore toutes les fréquences : graves, médiums, aigus.
+
+Pour créer un vrai canal LFE, il faudrait garder surtout les basses fréquences. Ici, on utilise un filtre simple :
+
+previousSub = alpha * subValue + (1.0 - alpha) * previousSub;
+
+C’est un filtre passe-bas très simple. Il lisse le signal, donc il atténue une partie des variations rapides, qui correspondent souvent aux fréquences plus aiguës.
+
+Plus alpha est petit, plus le signal est lissé.
+
+Exemple :
+
+alpha = 0.08
+
+donne un canal Sub plus doux.
+
+Pour passer d’un fichier stéréo 2.0 à un fichier 2.1, je parcours les frames audio du fichier original. Chaque frame contient un sample gauche L et un sample droit R. Je conserve ces deux samples, puis je crée un troisième sample Sub en calculant la moyenne : Sub = (L + R) / 2. Le nouveau tableau audio est ensuite ré-entrelacé selon le schéma [L, R, Sub].
+
+Pour obtenir un canal LFE plus réaliste, on peut appliquer un filtre passe-bas sur le canal Sub afin d’atténuer les fréquences aiguës et de conserver principalement les graves. Après la transformation, le header WAV doit être mis à jour : NumChannels passe à 3, BlockAlign devient 3 × BitsPerSample/8, ByteRate devient SampleRate × BlockAlign, DataSize devient la taille du nouveau tableau audio, et ChunkSize est recalculé avec la taille totale du fichier moins 8.
