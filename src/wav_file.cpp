@@ -1,5 +1,5 @@
-#include "wav_file.hpp"
-#include "binary_utils.hpp"
+#include "../include/wav_file.hpp"
+#include "../include/binary_utils.hpp"
 
 #include <fstream>
 #include <stdexcept>

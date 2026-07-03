@@ -1,11 +1,12 @@
-#include "wav_file.hpp"
-#include "audio_processing.hpp"
-#include "binary_utils.hpp"
+#include "include/wav_file.hpp"
+#include "include/audio_processing.hpp"
+#include "include/binary_utils.hpp"
 
 
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <string>
 
 int main() {
     try {
@@ -44,6 +45,50 @@ int main() {
         );
 
         std::cout << "Nombre total de samples : " << samples.size() << "\n";
+
+        std::cout << "======Steganographie audio LSB : cacher un message======" << "\n";
+
+        std::string secretMessage =
+            "Bonjour, ceci est un message cache dans le fichier WAV.";
+
+        std::vector<int16_t> stegoSamples =
+            hideMessageLSB(samples, secretMessage);
+
+        std::vector<uint8_t> stegoBytes =
+            samples16ToBytes(stegoSamples);
+
+        std::vector<uint8_t> stegoBuffer = buffer;
+
+        std::copy(
+            stegoBytes.begin(),
+            stegoBytes.end(),
+            stegoBuffer.begin() + static_cast<long>(info.audioDataOffset)
+        );
+
+        writeBinaryFile("output/steganography.wav", stegoBuffer);
+
+        std::cout << "Fichier cree : output/steganography.wav\n";
+        std::cout << "Message cache : " << secretMessage << "\n";
+
+        std::cout << "======Lecture du message cache======" << "\n";
+
+        std::vector<uint8_t> stegoFileBuffer =
+            readBinaryFile("output/steganography.wav");
+
+        WavInfo stegoInfo =
+            parseWavInfo(stegoFileBuffer);
+
+        std::vector<int16_t> stegoExtractedSamples =
+            extractSamples16Bits(
+                stegoFileBuffer,
+                stegoInfo.audioDataOffset,
+                stegoInfo.dataSize
+            );
+
+        std::string extractedMessage =
+            extractMessageLSB(stegoExtractedSamples);
+
+        std::cout << "Message extrait : " << extractedMessage << "\n";
 
         std::vector<int16_t> downsampledSamples = downsampleBy2ByFrames(
             samples,

@@ -1,12 +1,12 @@
-#include "audio_processing.hpp"
-#include "binary_utils.hpp"
+#include "../include/audio_processing.hpp"
+#include "../include/binary_utils.hpp"
 
 #include <stdexcept>
 #include <cmath>
 #include <limits>
-#include <algorithm>
 #include <cmath>
 #include <limits>
+#include <string>
 
 std::vector<int16_t> extractSamples16Bits(
     const std::vector<uint8_t>& buffer,
@@ -441,4 +441,93 @@ std::vector<int16_t> generateTravelingSine51(
     }
 
     return samples;
+}
+
+std::vector<int16_t> hideMessageLSB(
+    const std::vector<int16_t>& samples,
+    const std::string& message
+) {
+    if (message.size() > std::numeric_limits<uint32_t>::max()) {
+        throw std::runtime_error("Message trop grand pour etre encode");
+    }
+
+    std::vector<uint8_t> payload;
+    uint32_t messageSize = static_cast<uint32_t>(message.size());
+
+    payload.reserve(sizeof(messageSize) + message.size());
+
+    payload.push_back(static_cast<uint8_t>(messageSize & 0xFF));
+    payload.push_back(static_cast<uint8_t>((messageSize >> 8) & 0xFF));
+    payload.push_back(static_cast<uint8_t>((messageSize >> 16) & 0xFF));
+    payload.push_back(static_cast<uint8_t>((messageSize >> 24) & 0xFF));
+
+    for (char character : message) {
+        payload.push_back(static_cast<uint8_t>(character));
+    }
+
+    size_t neededBits = payload.size() * 8;
+
+    if (neededBits > samples.size()) {
+        throw std::runtime_error("Message trop grand pour etre cache dans ce fichier audio");
+    }
+
+    std::vector<int16_t> result = samples;
+
+    for (size_t bitIndex = 0; bitIndex < neededBits; bitIndex++) {
+        uint8_t currentByte = payload[bitIndex / 8];
+        uint8_t bit = static_cast<uint8_t>(
+            (currentByte >> (bitIndex % 8)) & 1
+        );
+
+        uint16_t raw = static_cast<uint16_t>(result[bitIndex]);
+        raw = static_cast<uint16_t>((raw & 0xFFFE) | bit);
+
+        result[bitIndex] = static_cast<int16_t>(raw);
+    }
+
+    return result;
+}
+
+std::string extractMessageLSB(
+    const std::vector<int16_t>& samples
+) {
+    if (samples.size() < 32) {
+        throw std::runtime_error("Fichier audio trop petit pour contenir un message");
+    }
+
+    uint32_t messageSize = 0;
+
+    for (size_t bitIndex = 0; bitIndex < 32; bitIndex++) {
+        uint16_t raw = static_cast<uint16_t>(samples[bitIndex]);
+        uint32_t bit = static_cast<uint32_t>(raw & 1);
+
+        messageSize |= bit << bitIndex;
+    }
+
+    size_t neededBits = 32 + static_cast<size_t>(messageSize) * 8;
+
+    if (neededBits > samples.size()) {
+        throw std::runtime_error("Aucun message valide trouve ou message incomplet");
+    }
+
+    std::string message(messageSize, '\0');
+
+    for (size_t bitIndex = 0; bitIndex < static_cast<size_t>(messageSize) * 8; bitIndex++) {
+        uint16_t raw = static_cast<uint16_t>(samples[32 + bitIndex]);
+        uint8_t bit = static_cast<uint8_t>(raw & 1);
+
+        size_t characterIndex = bitIndex / 8;
+        size_t bitPosition = bitIndex % 8;
+
+        uint8_t currentChar =
+            static_cast<uint8_t>(message[characterIndex]);
+
+        currentChar = static_cast<uint8_t>(
+            currentChar | (bit << bitPosition)
+        );
+
+        message[characterIndex] = static_cast<char>(currentChar);
+    }
+
+    return message;
 }

@@ -3,8 +3,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
-#include <cstddef>
 
 std::vector<int16_t> extractSamples16Bits(
     const std::vector<uint8_t>& buffer,
@@ -73,6 +73,15 @@ std::vector<int16_t> generateTravelingSine51(
     double durationSeconds,
     uint32_t sampleRate,
     double amplitudeRatio = 0.5
+);
+
+std::vector<int16_t> hideMessageLSB(
+    const std::vector<int16_t>& samples,
+    const std::string& message
+);
+
+std::string extractMessageLSB(
+    const std::vector<int16_t>& samples
 );
 
 #endif

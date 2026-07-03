@@ -134,3 +134,244 @@ Pour obtenir un canal LFE plus réaliste, on peut appliquer un filtre passe-bas 
 Pour simuler un fichier surround 5.1 à partir d’une source stéréo, je parcours les frames du fichier original. Chaque frame contient deux samples : L et R. Je crée ensuite une nouvelle frame de 6 canaux selon l’ordre [L, R, C, LFE, Ls, Rs]. Les canaux L et R conservent les valeurs originales. Le canal central C reçoit la somme de L et R, avec une limitation pour éviter le dépassement des bornes du format 16 bits. Le canal LFE reçoit la moyenne de L et R. Les canaux arrière Ls et Rs reçoivent respectivement L/2 et R/2 pour obtenir une version atténuée du signal.
 
 Après cette transformation, le header WAV doit être mis à jour : NumChannels passe à 6, BlockAlign devient 6 × BitsPerSample/8, ByteRate devient SampleRate × BlockAlign, DataSize devient la taille du nouveau tableau audio, et ChunkSize est recalculé avec la taille totale du fichier moins 8.
+
+
+# les informations entre l’offset 4 à 7
+
+Les octets :
+
+offset 4, 5, 6, 7
+
+contiennent le champ :
+
+
+
+C’est une valeur sur 4 octets, donc un uint32_t.
+
+Son rôle : indiquer la taille du fichier WAV à partir de l’offset 8.
+
+Autrement dit :
+
+ChunkSize = taille totale du fichier - 8
+
+Donc si ton fichier fait par exemple :
+
+100 000 octets
+
+alors normalement :
+
+ChunkSize = 99 992
+
+Pourquoi -8 ? Parce qu’on ne compte pas :
+
+offset 0-3 : "RIFF"
+offset 4-7 : ChunkSize lui-même
+
+Donc ChunkSize décrit ce qui vient après ces 8 premiers octets.
+
+Dans ton code, tu lis cette valeur avec :
+
+readUInt32LE(buffer, 4)
+
+# Le rôle de cette partie dans findDataChunk
+
+```
+offset += 8 + chunkSize;
+
+if (chunkSize % 2 != 0) {
+    offset += 1;
+}
+```
+# Vue d’ensemble du header WAV classique
+
+|    Offset | Nombre d’octets | Nom du champ    | Rôle                                                |
+| --------: | --------------: | --------------- | --------------------------------------------------- |
+|   `0 - 3` |               4 | `ChunkID`       | Doit contenir `"RIFF"`                              |
+|   `4 - 7` |               4 | `ChunkSize`     | Taille du fichier moins 8                           |
+|  `8 - 11` |               4 | `Format`        | Doit contenir `"WAVE"`                              |
+| `12 - 15` |               4 | `Subchunk1ID`   | Doit contenir `"fmt "`                              |
+| `16 - 19` |               4 | `Subchunk1Size` | Taille du chunk `fmt`, souvent `16` pour PCM simple |
+| `20 - 21` |               2 | `AudioFormat`   | Type d’encodage audio, `1` = PCM                    |
+| `22 - 23` |               2 | `NumChannels`   | Nombre de canaux : `1` mono, `2` stéréo, `6` 5.1    |
+| `24 - 27` |               4 | `SampleRate`    | Fréquence d’échantillonnage, ex. `44100` Hz         |
+| `28 - 31` |               4 | `ByteRate`      | Nombre d’octets lus par seconde                     |
+| `32 - 33` |               2 | `BlockAlign`    | Nombre d’octets par frame audio                     |
+| `34 - 35` |               2 | `BitsPerSample` | Taille d’un sample : ex. `16 bits`                  |
+| `36 - 39` |               4 | `Subchunk2ID`   | Souvent `"data"` dans un WAV simple                 |
+| `40 - 43` |               4 | `Subchunk2Size` | Taille des données audio                            |
+|  `44 ...` |        variable | Audio data      | Les samples audio réels                             |
+
+
+# C’est quoi un chunk réellement ?
+Un chunk, c’est un bloc structuré dans un fichier WAV.
+
+Tu peux imaginer un fichier WAV comme une succession de boîtes :
+
+[RIFF]
+    [fmt ]
+    [data]
+    [autres chunks possibles]
+
+Chaque boîte a :
+
+1. un nom
+2. une taille
+3. un contenu
+
+En binaire, un chunk WAV ressemble à ça :
+
+4 octets → nom du chunk
+4 octets → taille du contenu
+n octets → contenu réel du chunk
+
+Exemple avec le chunk fmt :
+
+offset 12 - 15 : "fmt "
+offset 16 - 19 : taille du chunk fmt
+offset 20 - 35 : contenu du chunk fmt
+
+Donc le chunk fmt n’est pas seulement les lettres "fmt ". Le chunk complet contient aussi sa taille et son contenu.
+
+## Exemple concret avec un WAV simple
+
+Dans un WAV classique, tu peux avoir :
+
+offset 0  - 3  : "RIFF"
+offset 4  - 7  : taille du fichier - 8
+offset 8  - 11 : "WAVE"
+
+offset 12 - 15 : "fmt "
+offset 16 - 19 : taille du chunk fmt = 16
+offset 20 - 35 : contenu du chunk fmt
+
+offset 36 - 39 : "data"
+offset 40 - 43 : taille des données audio
+offset 44 ...  : samples audio
+
+Donc ici :
+
+le chunk fmt commence à offset 12
+sa taille de contenu est 16
+le prochain chunk commence à offset 12 + 8 + 16 = 36
+
+Voilà pourquoi on fait :
+
+offset += 8 + chunkSize;
+## Pourquoi on saute 8 + chunkSize ?
+
+Parce que le chunk est composé de :
+
+4 octets : nom du chunk
+4 octets : taille du chunk
+chunkSize octets : contenu du chunk
+
+Donc pour passer au prochain chunk, il faut sauter tout le chunk actuel.
+
+taille totale du chunk = 4 + 4 + chunkSize
+                      = 8 + chunkSize
+
+Exemple :
+
+offset actuel = 12
+chunk actuel = "fmt "
+chunkSize = 16
+
+Donc :
+
+prochain chunk = 12 + 8 + 16
+               = 36
+
+À l’offset 36, on trouve souvent :
+
+"data"
+## Pourquoi data ne peut pas simplement être à offset + 1 ?
+
+Techniquement, les lettres "data" peuvent apparaître n’importe où dans les octets du fichier, même à l’intérieur d’un contenu audio.
+
+Mais ça ne veut pas dire que c’est un vrai chunk data.
+
+Un vrai chunk doit commencer exactement à une position structurée comme ceci :
+
+4 octets : nom du chunk
+4 octets : taille
+n octets : contenu
+
+Si tu fais :
+
+offset + 1
+
+tu arrives au milieu du chunk actuel.
+
+Exemple :
+
+offset 12 : 'f'
+offset 13 : 'm'
+offset 14 : 't'
+offset 15 : ' '
+
+Si tu fais offset + 1, tu arrives à :
+
+offset 13 : 'm'
+
+Tu es au milieu du nom "fmt ". Ce n’est pas un début de chunk.
+
+Donc dans un fichier WAV, on ne cherche pas le chunk suivant octet par octet. On suit la structure officielle :
+
+début du chunk actuel
++ 8 octets de header du chunk
++ taille du contenu du chunk
+= début du chunk suivant
+
+C’est exactement ce que fait ta fonction findDataChunk(). Elle commence à l’offset 12, lit le nom du chunk, lit sa taille, puis saute au chunk suivant jusqu’à trouver "data".
+
+## remarque: 
+Donc dans un fichier WAV, on ne cherche pas le chunk suivant octet par octet. On suit la structure officielle :
+
+début du chunk actuel
++ 8 octets de header du chunk
++ taille du contenu du chunk
+= début du chunk suivant
+
+# C’est quoi un sample ?
+
+Un sample, c’est une valeur numérique qui représente l’amplitude du son à un instant précis.
+Le son réel est une onde continue. L’ordinateur ne peut pas stocker une onde continue directement, donc il prend plein de mesures très rapidement.
+
+Exemple avec une fréquence d’échantillonnage de 44100 Hz :
+
+44100 samples par seconde en mono
+
+Chaque sample est une mesure du signal audio.
+
+En PCM 16 bits, un sample peut avoir une valeur entre :
+
+-32768 et 32767
+
+Exemple :
+
+sample 0 = 0
+sample 1 = 1200
+sample 2 = 2500
+sample 3 = -1000
+sample 4 = -3000
+
+# Sample en mono vs stéréo
+
+En mono, chaque instant audio contient un seul sample :
+
+S0 S1 S2 S3 ...
+
+En stéréo, chaque instant audio contient deux samples :
+
+L0 R0  L1 R1  L2 R2 ...
+
+Donc :
+
+L0 = sample gauche au temps 0
+R0 = sample droite au temps 0
+L1 = sample gauche au temps 1
+R1 = sample droite au temps 1
+
+Un groupe complet L0 R0 s’appelle une frame audio.
+
+Une frame audio, c’est l’ensemble des samples de tous les canaux à un instant précis.

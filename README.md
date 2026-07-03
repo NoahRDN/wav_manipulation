@@ -142,3 +142,14 @@ Debut donnees audio : 252
 ## Remarque
 
 Le projet est centré sur la manipulation binaire du format WAV. Les nouveaux fichiers sont reconstruits à partir des données transformées et d'un header mis à jour selon le traitement appliqué.
+
+
+---------------
+
+g++ -std=c++17 -O2 \
+    main.cpp \
+    src/binary_utils.cpp \
+    src/wav_file.cpp \
+    src/audio_processing.cpp \
+    -Iinclude \
+    -o output/wav_tp
